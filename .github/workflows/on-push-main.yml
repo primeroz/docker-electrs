@@ -1,0 +1,105 @@
+# from https://raw.githubusercontent.com/lncm/docker-tor/master/.github/workflows/on-push-master.yml
+
+name: Docker build on push
+env:
+        DOCKER_CLI_EXPERIMENTAL: enabled
+
+on:
+    push:
+        branches:
+            - main
+
+jobs:
+        build:
+                runs-on: ubuntu-18.04
+                name: Build and push all the stuff defined in this repo
+                steps:
+                        - name: Checkout repo
+                          uses: actions/checkout@v2
+
+                        - name: Set env variables
+                          run: |
+                                  echo "::set-env name=BRANCH::$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')"
+                                  echo "::set-env name=SHORTSHA::$(git rev-parse --short HEAD)"
+                                  echo "::set-env name=DOCKER_HUB_REPO::blockstream-electrs"
+
+                        - name: Show set env variables
+                          run: |
+                                  printf "    BRANCH: %s\n"  "$BRANCH"
+                                  printf "    SHORTSHA: %s\n"  "$SHORTSHA"
+                                  printf "    REPO: %s\n" "$GITHUB_REPOSITORY"
+                                  printf "    COMMIT ID: %s\n" "$GITHUB_SHA"
+                                  printf "    DOCKER REPO: %s\n" "$DOCKER_HUB_REPO"
+                                  printf "    GITHUB_ACTOR: %s\n" "$GITHUB_ACTOR"
+                                  printf "    GITHUB_REPOSITORY: %s\n" "$GITHUB_REPOSITORY"
+
+                        - name: Login to Docker Hub
+                          run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+                        - name: Setup Docker buildx action
+                          uses: crazy-max/ghaction-docker-buildx@v1
+                          id: buildx
+                          with:
+                                  buildx-version: latest
+                                  qemu-version: latest
+
+                        - name: Show available Docker buildx platforms
+                          run: echo ${{ steps.buildx.outputs.platforms }}
+
+                        - name: Cache Docker layers
+                          uses: actions/cache@v2
+                          id: cache
+                          with:
+                              path: /tmp/.buildx-cache
+                              key: ${{ runner.os }}-buildx-${{ github.sha }}
+                              restore-keys: |
+                                  ${{ runner.os }}-buildx-
+
+                                  #--platform linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 \
+                                  #docker build --no-cache "$DIR/"
+                                  #--build-arg "ARCH=${{ matrix.arch }}"
+                                  #--label     "arch=${{ matrix.arch }}"
+                                  #--label     "commit=${{ github.sha }}"
+                                  #--label     "git-tag=$TAG"
+                                  #--label     "guilty=${{ github.actor }}"
+                                  #--label     "repo-url=${{ github.repositoryUrl }}"
+                                  #--tag       "$APP"
+                        - name: Build against master
+                          run: |
+                                  docker buildx build \
+                                  --cache-from "type=local,src=/tmp/.buildx-cache" \
+                                  --cache-to "type=local,dest=/tmp/.buildx-cache" \
+                                  --platform linux/arm64 \
+                                  --tag ${{ secrets.DOCKER_HUB_USER }}/$DOCKER_HUB_REPO:master-$SHORTSHA \
+                                  --output "type=registry" .
+
+                        - name: Build against latest tag
+                          run: |
+                                  docker buildx build \
+                                  --cache-from "type=local,src=/tmp/.buildx-cache" \
+                                  --cache-to "type=local,dest=/tmp/.buildx-cache" \
+                                  --platform linux/arm64 \
+                                  --tag ${{ secrets.DOCKER_HUB_USER }}/$DOCKER_HUB_REPO:latest \
+                                  --output "type=registry" .
+
+                        #- name: Login and push (master to GHCR with MAINTAINER_USER and MAINTAINER_TOKEN if exists
+                        #  run: |
+                        #          if [[ ! -z ${{ secrets.MAINTAINER_TOKEN }} ]] && [[ ! -z ${{ secrets.MAINTAINER_USER }} ]]; then  
+                        #                echo "${{ secrets.MAINTAINER_TOKEN }}" | docker login https://ghcr.io -u "${{ secrets.MAINTAINER_USER }}" --password-stdin
+                        #                docker buildx build \
+                        #                        --cache-from "type=local,src=/tmp/.buildx-cache" \
+                        #                        --cache-to "type=local,dest=/tmp/.buildx-cache" \
+                        #                        --platform linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 \
+                        #                        --tag ghcr.io/${{ secrets.DOCKER_HUB_USER }}/$DOCKER_HUB_REPO:master-$SHORTSHA \
+                        #                        --output "type=registry" .
+                        #                docker buildx build \
+                        #                        --cache-from "type=local,src=/tmp/.buildx-cache" \
+                        #                        --cache-to "type=local,dest=/tmp/.buildx-cache" \
+                        #                        --platform linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 \
+                        #                        --tag ghcr.io/${{ secrets.DOCKER_HUB_USER }}/$DOCKER_HUB_REPO:latest \
+                        #                        --output "type=registry" .                                                 
+                        #          else
+                        #                echo "MAINTAINER_TOKEN and MAINTAINER_USER do no exist! Skipping!"
+                        #          fi
+  
+
