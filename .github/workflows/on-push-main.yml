@@ -1,5 +1,16 @@
 # from https://raw.githubusercontent.com/lncm/docker-tor/master/.github/workflows/on-push-master.yml
 
+# Notes
+#--platform linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 \
+#docker build --no-cache "$DIR/"
+#--build-arg "ARCH=${{ matrix.arch }}"
+#--label     "arch=${{ matrix.arch }}"
+#--label     "commit=${{ github.sha }}"
+#--label     "git-tag=$TAG"
+#--label     "guilty=${{ github.actor }}"
+#--label     "repo-url=${{ github.repositoryUrl }}"
+#--tag       "$APP"
+
 name: Docker build on push
 env:
         DOCKER_CLI_EXPERIMENTAL: enabled
@@ -55,15 +66,6 @@ jobs:
                               restore-keys: |
                                   ${{ runner.os }}-buildx-
 
-                                  #--platform linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 \
-                                  #docker build --no-cache "$DIR/"
-                                  #--build-arg "ARCH=${{ matrix.arch }}"
-                                  #--label     "arch=${{ matrix.arch }}"
-                                  #--label     "commit=${{ github.sha }}"
-                                  #--label     "git-tag=$TAG"
-                                  #--label     "guilty=${{ github.actor }}"
-                                  #--label     "repo-url=${{ github.repositoryUrl }}"
-                                  #--tag       "$APP"
                         - name: Build against master
                           run: |
                                   docker buildx build \
