@@ -33,7 +33,8 @@ SHELL ["/bin/bash", "-c"]
 
 COPY --from=BUILD /srv/electrs_bitcoin /srv/electrs
 
-RUN adduser --disabled-login --system --shell /bin/false --home /srv/electrs --uid $UID --gid $GID $USER
+RUN addgroup --gid $GID $USER
+RUN adduser --disabled-login --system --shell /bin/false --home /srv/electrs --uid $UID $USER
 USER $USER
 WORKDIR $DIR
 
