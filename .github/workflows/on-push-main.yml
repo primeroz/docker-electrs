@@ -1,4 +1,5 @@
 # from https://raw.githubusercontent.com/lncm/docker-tor/master/.github/workflows/on-push-master.yml
+# REVIEW https://github.com/dexidp/dex/blob/5807011b6a1e203bae714e6e9f2cb632783ae091/.github/workflows/release.yml#L43
 
 # Notes
 #--platform linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 \
